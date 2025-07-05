@@ -16,7 +16,7 @@ default-run = "{{settings.module_name}}-cli"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-loco-rs = { {{settings.loco_version_text}} {%- if not settings.features.default_features  %}, default-features = false {%- endif %} }
+loco-rs = { git = "https://github.com/floscodes/loco.git", branch = "dev-master" {%- if not settings.features.default_features  %}, default-features = false {%- endif %} }
 
 [dependencies]
 loco-rs = { workspace = true {% if feature_list | length > 0 %}, features = {{feature_list}}{% endif %} }
