@@ -123,15 +123,14 @@ impl MiddlewareLayer for CsrfProtection {
                     csrf_config = csrf_config.with_salt(salt.clone());
                 }
                 if let Some(key) = &token.key {
-                    let key = key.strip_prefix("base64:");
-                    if key.is_none() {
+                    let key = key.strip_prefix("base64:").ok_or(crate::Error::string(
+                        "CSRF key must be prefixed with 'base64:'",
+                    ))?;
+                    if key.is_empty() {
                         return Err(crate::Error::string(
-                            "CSRF key must be prefixed with 'base64:'",
+                            "CSRF key cannot be empty after 'base64:' prefix.",
                         ));
                     }
-
-                    let key = key.unwrap();
-
                     let key_bytes =
                         B64Engine::general_purpose::STANDARD
                             .decode(key)
