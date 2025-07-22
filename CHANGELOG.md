@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+## v0.16.1
+- Update auth import in the Authentication document. [https://github.com/loco-rs/loco/pull/1531](https://github.com/loco-rs/loco/pull/1531)
+- Adding cache control header to the static asset middleware. [https://github.com/loco-rs/loco/pull/1535](https://github.com/loco-rs/loco/pull/1535)
+- Fix borrow checker when sending config to handle_job_command when feature with-db is off. [https://github.com/loco-rs/loco/pull/1536](https://github.com/loco-rs/loco/pull/1536)
+- feat: add initializer health checks to doctor command. [https://github.com/loco-rs/loco/pull/1537](https://github.com/loco-rs/loco/pull/1537)
+- Update shuttle template to 0.56. [https://github.com/loco-rs/loco/pull/1518](https://github.com/loco-rs/loco/pull/1518)
+- Encapsulate post-processing into Tera engine creation. [https://github.com/loco-rs/loco/pull/1540](https://github.com/loco-rs/loco/pull/1540)
+- Adding QueryValidateWithMessage. [https://github.com/loco-rs/loco/pull/1521](https://github.com/loco-rs/loco/pull/1521)
+- Add S3 driver with credentials and endpoint support. [https://github.com/loco-rs/loco/pull/1539](https://github.com/loco-rs/loco/pull/1539)
+
+## v0.16.1
+- fix clippy result_large_err. [https://github.com/loco-rs/loco/pull/1496](https://github.com/loco-rs/loco/pull/1496)
+- chore: remove async-std. [https://github.com/loco-rs/loco/pull/1492](https://github.com/loco-rs/loco/pull/1492)
+- fix: Bump shuttle version to 0.55.0. [https://github.com/loco-rs/loco/pull/1488](https://github.com/loco-rs/loco/pull/1488)
+- Change the Docker building image to 1.87. [https://github.com/loco-rs/loco/pull/1475](https://github.com/loco-rs/loco/pull/1475)
+- Fix Clippy warnings for Rust 1.88 stable. [https://github.com/loco-rs/loco/pull/1519](https://github.com/loco-rs/loco/pull/1519) 
+- Remove Migrator from boot_test_* doc comments. [https://github.com/loco-rs/loco/pull/1512](https://github.com/loco-rs/loco/pull/1512) 
+- fix: use rust-lld linker on Windows. [https://github.com/loco-rs/loco/pull/1508](https://github.com/loco-rs/loco/pull/1508) 
+- Fix precompressed in static assets. [https://github.com/loco-rs/loco/pull/1524](https://github.com/loco-rs/loco/pull/1524) 
+- Support multiple JWT locations. [https://github.com/loco-rs/loco/pull/1497](https://github.com/loco-rs/loco/pull/1497) 
+
 ## v0.16.0
 
 **Note:** For detailed upgrade steps for breaking changes, see the [upgrade guide](https://loco.rs/docs/extras/upgrades/#upgrade-from-0-15-x-to-0-16-x).
