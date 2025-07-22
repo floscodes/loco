@@ -18,7 +18,8 @@ fn can_generate() {
     configure_insta!();
 
     let component = Component::Task {
-        name: "cleanup".to_string(),
+        name: Some("cleanup".to_string()),
+        git: None,
     };
 
     let tree_fs = tree_fs::TreeBuilder::default()

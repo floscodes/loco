@@ -302,7 +302,10 @@ After running the migration, follow these steps to complete the process:
     /// Generate a Task based on the given name
     Task {
         /// Name of the thing to generate
-        name: String,
+        name: Option<String>,
+        /// Optional path to git repository
+        #[arg(long)]
+        git: Option<String>,
     },
     /// Generate a scheduler jobs configuration template
     Scheduler {},
@@ -416,7 +419,23 @@ impl ComponentArg {
                     kind,
                 })
             }
-            Self::Task { name } => Ok(loco_gen::Component::Task { name }),
+            Self::Task { name, git } => {
+                if let Some(git) = git {
+                    if !git.starts_with("https://") && !git.starts_with("git@") {
+                        return Err(crate::Error::string(
+                            "Error: git repository must start with `https://` or `git@`.",
+                        ));
+                    }
+                    return Ok(loco_gen::Component::Task {
+                        name: None,
+                        git: Some(git),
+                    });
+                }
+                Ok(loco_gen::Component::Task {
+                    name: name,
+                    git: None,
+                })
+            }
             Self::Scheduler {} => Ok(loco_gen::Component::Scheduler {}),
             Self::Worker { name } => Ok(loco_gen::Component::Worker { name }),
             Self::Mailer { name } => Ok(loco_gen::Component::Mailer { name }),

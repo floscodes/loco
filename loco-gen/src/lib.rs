@@ -6,6 +6,7 @@ pub use rrgen::{GenResult, RRgen};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 mod controller;
+mod git_task;
 use colored::Colorize;
 use std::fmt::Write;
 use std::{
@@ -281,7 +282,10 @@ pub enum Component {
     },
     Task {
         /// Name of the thing to generate
-        name: String,
+        /// Can be left out if using git
+        name: Option<String>,
+        /// Optional path to git repository
+        git: Option<String>,
     },
     Scheduler {},
     Worker {
@@ -341,10 +345,25 @@ pub fn generate(rrgen: &RRgen, component: Component, appinfo: &AppInfo) -> Resul
             actions,
             kind,
         } => controller::generate(rrgen, &name, &actions, &kind, appinfo)?,
-        Component::Task { name } => {
-            let vars = json!({"name": name, "pkg_name": appinfo.app_name});
-            render_template(rrgen, Path::new("task"), &vars)?
-        }
+        Component::Task { name, git } => match (name, git) {
+            (Some(name), None) => {
+                let vars = json!({
+                    "name": name,
+                    "pkg_name": appinfo.app_name,
+                });
+                render_template(rrgen, Path::new("task"), &vars)?
+            }
+
+            (None, Some(git_url)) => git_task::fetch(rrgen, Some(&git_url))?,
+
+            (Some(_), Some(git_url)) => git_task::fetch(rrgen, Some(&git_url))?,
+
+            (None, None) => {
+                return Err(Error::Message(
+                    "Task name is required when not using --git".to_string(),
+                ));
+            }
+        },
         Component::Scheduler {} => {
             let vars = json!({"pkg_name": appinfo.app_name});
             render_template(rrgen, Path::new("scheduler"), &vars)?
