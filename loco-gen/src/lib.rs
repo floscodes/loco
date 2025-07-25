@@ -354,9 +354,12 @@ pub fn generate(rrgen: &RRgen, component: Component, appinfo: &AppInfo) -> Resul
                 render_template(rrgen, Path::new("task"), &vars)?
             }
 
-            (None, Some(git_url)) => git_task::fetch(rrgen, Some(&git_url))?,
+            (None, Some(git_url)) => git_task::fetch_and_generate(rrgen, Some(&git_url), appinfo)?,
 
-            (Some(_), Some(git_url)) => git_task::fetch(rrgen, Some(&git_url))?,
+            (Some(_), Some(git_url)) => {
+                println!("Warning: Task name ist provided, but will be overwritten by the given name in the git task repository.");
+                git_task::fetch_and_generate(rrgen, Some(&git_url), appinfo)?
+            }
 
             (None, None) => {
                 return Err(Error::Message(
