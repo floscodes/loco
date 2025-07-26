@@ -6,9 +6,10 @@ use serde_json::json;
 use std::path::Path;
 use std::str::FromStr;
 use toml::Value;
-use toml_edit::{Document, DocumentMut, Item, Table};
+use toml_edit::{DocumentMut, Item, Table};
 
-const CONFIG_FILE: &str = "loco-task.toml";
+const TASKS_PATH: &str = "task";
+const CONFIG_FILE: &str = "Cargo.toml";
 
 pub fn fetch_and_generate(
     rrgen: &RRgen,
@@ -17,13 +18,13 @@ pub fn fetch_and_generate(
 ) -> Result<GenerateResults> {
     if let Some(git_url) = git_url {
         println!("Fetching task from git repository: {}", git_url);
-        let _repo = git2::Repository::clone(git_url, "./task")
+        let _repo = git2::Repository::clone(git_url, TASKS_PATH)
             .map_err(|e| Error::Message(format!("Failed to clone git repository: {}", e)))?;
         let git_path = git_url
             .rsplit("/")
             .next()
             .ok_or(Error::Message("Failed to get git repo name".to_string()))?;
-        let path_str = format!("./task/{}", git_path);
+        let path_str = format!("./{}/{}", TASKS_PATH, git_path);
         let git_dir = Path::new(&path_str);
         let config_path = git_dir.join(CONFIG_FILE);
         println!(
@@ -33,22 +34,23 @@ pub fn fetch_and_generate(
         // Check if the configuration file exists
         if !config_path.exists() {
             return Err(Error::Message(format!(
-                "Configuration file '{}' not found in the repository",
+                "{} not found in the repository",
                 CONFIG_FILE
             )));
         }
         let config_file = std::fs::read_to_string(config_path.clone())
-            .map_err(|e| Error::Message(format!("Failed to read loco-task.toml: {}", e)))?;
+            .map_err(|e| Error::Message(format!("Failed to read {}: {}", CONFIG_FILE, e)))?;
         println!("Parsing loco-task.toml");
         let config_toml: Value = toml::from_str(&config_file)
-            .map_err(|e| Error::Message(format!("Failed to parse loco-task.toml: {}", e)))?;
+            .map_err(|e| Error::Message(format!("Failed to parse {}: {}", CONFIG_FILE, e)))?;
         let task_name = config_toml
-            .get("loco-task")
+            .get("package")
             .and_then(|v| v.get("name"))
-            .ok_or(Error::Message(
-                "Task name not found in loco-task.toml. Task name is required.".to_string(),
-            ))?;
-        let task_name_path_string = format!("./task/{}", task_name.to_string());
+            .ok_or(Error::Message(format!(
+                "Package name not missing in {}. Task name is required.",
+                CONFIG_FILE
+            )))?;
+        let task_name_path_string = format!("./{}/{}", TASKS_PATH, task_name.to_string());
         println!(
             "Renaming git directory to task name: {}",
             task_name_path_string
@@ -61,12 +63,9 @@ pub fn fetch_and_generate(
             ))
         })?;
         let app_name = appinfo.app_name.as_str();
-
-        println!("Adding required dependencies to Cargo.toml if needed");
-        fetch_and_clone_deps(&renamed_git_dir).map_err(|e| {
-            Error::Message(format!("Failed to fetch and clone dependencies: {}", e))
-        })?;
-        println!("Rendering templates");
+        println!("Adding task to Cargo.toml");
+        add_to_cargo_toml(&task_name.to_string())?;
+        println!("Rendering template files");
         render_git_task(rrgen, &renamed_git_dir, task_name.to_string(), app_name)
     } else {
         Err(Error::Message(
@@ -90,29 +89,27 @@ fn render_git_task(
     render_template(rrgen, git_dir, &vars)
 }
 
-fn fetch_and_clone_deps(git_dir: &Path) -> Result<()> {
-    let task_config_raw = std::fs::read_to_string(git_dir.join(CONFIG_FILE))
-        .map_err(|e| Error::Message(format!("Failed to read task config file: {}", e)))?;
-    let cargo_toml_raw = std::fs::read_to_string(Path::new("Cargo.toml"))
-        .map_err(|e| Error::Message(format!("Failed to read Cargo.toml: {}", e)))?;
-    let task_config = Document::parse(task_config_raw)
-        .map_err(|e| Error::Message(format!("Failed to parse task config file TOML: {}", e)))?;
+fn add_to_cargo_toml(task_name: &String) -> Result<()> {
+    let cargo_toml_raw = std::fs::read_to_string(CONFIG_FILE)
+        .map_err(|e| Error::Message(format!("Failed to read {}: {}", CONFIG_FILE, e)))?;
+
     let mut cargo_toml = DocumentMut::from_str(&cargo_toml_raw)
         .map_err(|e| Error::Message(format!("Failed to parse Cargo.toml: {}", e)))?;
 
-    if let Some(deps) = task_config.get("dependencies") {
-        if let Some(deps) = deps.as_table() {
-            let entry = cargo_toml
-                .entry("dependencies")
-                .or_insert(Item::Table(Table::new()));
-            if let Item::Table(table) = entry {
-                table.extend(deps.clone());
-            }
-        }
+    let deps = cargo_toml
+        .entry("dependencies")
+        .or_insert(Item::Table(Table::new()));
+
+    if let Item::Table(deps_table) = deps {
+        let mut dep_item = Table::new();
+        dep_item["path"] = toml_edit::value(format!("./{}/{}", TASKS_PATH, task_name));
+        dep_item.set_implicit(true);
+
+        deps_table[task_name] = Item::Table(dep_item);
     }
 
-    std::fs::write("Cargo.toml", cargo_toml.to_string())
-        .map_err(|e| Error::Message(format!("Failed to write updated Cargo.toml: {}", e)))?;
+    std::fs::write(CONFIG_FILE, cargo_toml.to_string())
+        .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CONFIG_FILE, e)))?;
 
     Ok(())
 }
