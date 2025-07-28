@@ -2,7 +2,7 @@
 {% set module_name = file_name | pascal_case -%}
 to: "src/tasks/{{file_name}}.rs"
 skip_exists: true
-message: "A Task `{{module_name}}` was added successfully. Run with `cargo run task {{name}}`."
+message: "A Task `{{module_name}}`{% if is_git_task %}(git task){% endif %} was added successfully. Run with `cargo run task {{name}}`."
 injections:
 - into: "src/tasks/mod.rs"
   append: true
@@ -10,7 +10,13 @@ injections:
 - into: src/app.rs
   before: "// tasks-inject"
   content: "        tasks.register(tasks::{{file_name}}::{{module_name}});"
+- into: Cargo.toml
+  after: "[dependencies]"
+  content: '{% if is_git_task %}\n{{file_name}} = { path = "./tasks/{{file_name}}" }{% endif %}'
 ---
+{% if is_git_task %}
+use {{file_name}}::*;
+{%else%}
 use loco_rs::prelude::*;
 
 pub struct {{module_name}};
@@ -27,3 +33,4 @@ impl Task for {{module_name}} {
         Ok(())
     }
 }
+{%endif%}
