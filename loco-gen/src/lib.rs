@@ -350,6 +350,7 @@ pub fn generate(rrgen: &RRgen, component: Component, appinfo: &AppInfo) -> Resul
                 let vars = json!({
                     "name": name,
                     "pkg_name": appinfo.app_name,
+                    "is_git_task": false
                 });
                 render_template(rrgen, Path::new("task"), &vars)?
             }
