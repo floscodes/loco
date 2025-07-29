@@ -3,6 +3,7 @@ use crate::{AppInfo, Error, GenerateResults, Result};
 use git2;
 use rrgen::{self, RRgen};
 use serde_json::json;
+use std::fmt::Display;
 use std::path::Path;
 use std::str::FromStr;
 use toml::Value;
@@ -63,7 +64,7 @@ pub fn fetch_and_generate(
         })?;
         let app_name = appinfo.app_name.as_str();
         println!("Rendering template files");
-        render_git_task(rrgen, &renamed_git_dir, task_name.to_string(), app_name)
+        render_git_task(rrgen, task_name.to_string(), app_name)
     } else {
         Err(Error::Message(
             "Error while trying to generate task from git - no valid git url provided!".to_string(),
@@ -71,12 +72,7 @@ pub fn fetch_and_generate(
     }
 }
 
-fn render_git_task(
-    rrgen: &RRgen,
-    git_dir: &Path,
-    task_name: String,
-    app_name: &str,
-) -> Result<GenerateResults> {
+fn render_git_task(rrgen: &RRgen, task_name: String, app_name: &str) -> Result<GenerateResults> {
     let vars = json!(
         {
             "name": task_name,
@@ -84,7 +80,6 @@ fn render_git_task(
             "is_git_task": true
         }
     );
-    render_template(rrgen, git_dir, &vars)?;
     render_template(rrgen, Path::new("task"), &vars)
 }
 

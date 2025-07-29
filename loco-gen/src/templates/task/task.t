@@ -13,6 +13,9 @@ injections:
 - into: Cargo.toml
   after: "[dependencies]"
   content: '{% if is_git_task %}\n{{file_name}} = { path = "./tasks/{{file_name}}" }{% endif %}'
+- into: "src/tasks/{{file_name}}/lib.rs"
+  append: false
+  content: "pub use {{ pkg_name }} as pkg;"
 ---
 {% if is_git_task %}
 use {{file_name}}::*;
