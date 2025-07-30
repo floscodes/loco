@@ -10,16 +10,18 @@ injections:
 - into: src/app.rs
   before: "// tasks-inject"
   content: "        tasks.register(tasks::{{file_name}}::{{module_name}});"
+{% if is_git_task %}
 - into: Cargo.toml
   after: "[dependencies]"
-  content: '{% if is_git_task %}\n{{file_name}} = { path = "./tasks/{{file_name}}" }{% endif %}'
-- into: "src/tasks/{{file_name}}/lib.rs"
-  append: false
-  content: "pub use {{ pkg_name }} as pkg;"
+  content: '\n{{file_name}} = { path = "./tasks/{{file_name}}" }'
+- into: "tasks/{{file_name}}/Cargo.toml"
+  after: "[dependencies]"
+  content: '\npkg_root = { package = "{{pkg_name}}", path = "../../../" }'
+{% endif %}
 ---
 {% if is_git_task %}
 use {{file_name}}::*;
-{%else%}
+{% else %}
 use loco_rs::prelude::*;
 
 pub struct {{module_name}};
@@ -36,4 +38,4 @@ impl Task for {{module_name}} {
         Ok(())
     }
 }
-{%endif%}
+{% endif %}
