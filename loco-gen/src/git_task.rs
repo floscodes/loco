@@ -63,7 +63,7 @@ pub fn fetch_and_generate(
             ))
         })?;
         remove_project_dep_from_cargo_toml(config_file, config_path)
-            .map_err(|e| Error::Message(format!("Failed to update Cargo.toml: {}", e)))?;
+            .map_err(|e| Error::Message(format!("Failed to edit Cargo.toml for updating pkg_root dependency: {}", e)))?;
         let app_name = appinfo.app_name.as_str();
         println!("Rendering template files");
         render_git_task(rrgen, task_name.to_string(), app_name)
