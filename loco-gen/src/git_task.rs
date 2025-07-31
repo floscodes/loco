@@ -62,8 +62,12 @@ pub fn fetch_and_generate(
                 e
             ))
         })?;
-        remove_project_dep_from_cargo_toml(config_file, config_path)
-            .map_err(|e| Error::Message(format!("Failed to edit Cargo.toml for updating pkg_root dependency: {}", e)))?;
+        remove_project_dep_from_cargo_toml(config_file, &config_path).map_err(|e| {
+            Error::Message(format!(
+                "Failed to edit Cargo.toml for updating pkg_root dependency: {}",
+                e
+            ))
+        })?;
         let app_name = appinfo.app_name.as_str();
         println!("Rendering template files");
         render_git_task(rrgen, task_name.to_string(), app_name)
@@ -88,14 +92,14 @@ fn render_git_task(rrgen: &RRgen, task_name: String, app_name: &str) -> Result<G
 // This function removes the project_root dependency from the Cargo.toml.
 // This is useful, because it allows the task to be used as a dependency in other projects.
 // When the task.t is being rendered, the pkg_root dependency is added to the Cargo.toml with the correct path and name.
-fn remove_project_dep_from_cargo_toml(mut config_file: String, path: Path) -> Result<()> {
-    for line in config_file.lines() {
-        if line.contains("project =") {
-            config_file = config_file.replace(line, "");
-        }
-    }
+fn remove_project_dep_from_cargo_toml(config_file: String, path: &Path) -> Result<()> {
+    let new_config_file = config_file
+        .lines()
+        .filter(|l| !l.contains("pkg_root"))
+        .collect::<Vec<_>>()
+        .join("\n");
 
-    std::fs::write(path, cargo_toml)
+    std::fs::write(path, new_config_file)
         .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CONFIG_FILE, e)))?;
     Ok(())
 }
