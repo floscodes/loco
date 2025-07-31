@@ -54,8 +54,12 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
             CONFIG_FILE
         )));
     }
-    let config_file = std::fs::read_to_string(config_path.clone())
+    let mut config_file = std::fs::read_to_string(config_path.clone())
         .map_err(|e| Error::Message(format!("Failed to read {}: {}", CONFIG_FILE, e)))?;
+    // Check if the dependencies table exists in the configuration file.
+    // If not, add it.
+    config_file = check_deps_table_in_config_file(config_file);
+    // Parse the configuration file
     println!("Parsing loco-task.toml");
     let config_toml: Value = toml::from_str(&config_file)
         .map_err(|e| Error::Message(format!("Failed to parse {}: {}", CONFIG_FILE, e)))?;
@@ -113,6 +117,16 @@ fn remove_project_dep_from_cargo_toml(config_file: String, path: &Path) -> Resul
     std::fs::write(path, new_config_file)
         .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CONFIG_FILE, e)))?;
     Ok(())
+}
+
+fn check_deps_table_in_config_file(config_file: String) -> String {
+    let mut new_config_file = String::new();
+    if config_file.contains("[dependencies]") {
+        config_file
+    } else {
+        new_config_file.push_str("\n[dependencies]\n");
+        new_config_file
+    }
 }
 
 /* fn add_to_cargo_toml(task_name: &String) -> Result<()> {
