@@ -3,9 +3,9 @@ use crate::{AppInfo, Error, GenerateResults, Result};
 use git2;
 use rrgen::{self, RRgen};
 use serde_json::json;
-use std::fmt::Display;
 use std::path::Path;
 use std::str::FromStr;
+use std::{clone, fmt::Display};
 use toml::Value;
 use toml_edit::{DocumentMut, Item, Table};
 
@@ -18,8 +18,7 @@ pub fn fetch_and_generate(
 ) -> Result<GenerateResults> {
     if let Some(git_url) = git_url {
         println!("Fetching task from git repository: {}", git_url);
-        let _repo = git2::Repository::clone(git_url, "./tasks")
-            .map_err(|e| Error::Message(format!("Failed to clone git repository: {}", e)))?;
+        let _repo = clone_repo(git_url, Path::new("./tasks"))?;
         let git_path = git_url
             .rsplit("/")
             .next()
@@ -47,7 +46,7 @@ pub fn fetch_and_generate(
             .get("package")
             .and_then(|v| v.get("name"))
             .ok_or(Error::Message(format!(
-                "Package name not missing in {}. Task name is required.",
+                "Package name missing in {}. Task name is required.",
                 CONFIG_FILE
             )))?;
         let task_name_path_string = format!("./tasks/{}", task_name.to_string());
@@ -76,6 +75,12 @@ pub fn fetch_and_generate(
             "Error while trying to generate task from git - no valid git url provided!".to_string(),
         ))
     }
+}
+
+fn clone_repo(git_url: &str, path: &Path) -> Result<()> {
+    git2::Repository::clone(git_url, path)
+        .map_err(|e| Error::Message(format!("Failed to clone git repository: {}", e)))?;
+    Ok(())
 }
 
 fn render_git_task(rrgen: &RRgen, task_name: String, app_name: &str) -> Result<GenerateResults> {
