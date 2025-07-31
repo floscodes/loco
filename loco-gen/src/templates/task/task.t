@@ -20,7 +20,7 @@ injections:
 {% endif %}
 ---
 {% if is_git_task %}
-use {{file_name}}::*;
+pub use {{file_name}}::*;
 {% else %}
 use loco_rs::prelude::*;
 
