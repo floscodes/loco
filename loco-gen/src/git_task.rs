@@ -35,6 +35,9 @@ fn clone_repo(git_url: &str, path: &Path) -> Result<()> {
     Ok(())
 }
 
+// This function processes the cloned git repository.
+// It checks if the Cargo.toml file exists, parses it, renames the directory
+// to the task name, and renders the template files.
 fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<GenerateResults> {
     let git_path = git_url
         .rsplit("/")
