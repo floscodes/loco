@@ -181,29 +181,3 @@ fn check_deps_table_in_config_file(config_file: String) -> String {
         new_config_file
     }
 }
-
-/* fn add_to_cargo_toml(task_name: &String) -> Result<()> {
-    let cargo_toml_raw = std::fs::read_to_string(CONFIG_FILE)
-        .map_err(|e| Error::Message(format!("Failed to read {}: {}", CONFIG_FILE, e)))?;
-
-    let mut cargo_toml = DocumentMut::from_str(&cargo_toml_raw)
-        .map_err(|e| Error::Message(format!("Failed to parse Cargo.toml: {}", e)))?;
-
-    let deps = cargo_toml
-        .entry("dependencies")
-        .or_insert(Item::Table(Table::new()));
-
-    if let Item::Table(deps_table) = deps {
-        let mut dep_item = Table::new();
-        dep_item["path"] = toml_edit::value(format!("./src/tasks/{}", task_name));
-        dep_item.set_implicit(true);
-
-        deps_table[task_name] = Item::Table(dep_item);
-    }
-
-    std::fs::write(CONFIG_FILE, cargo_toml.to_string())
-        .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CONFIG_FILE, e)))?;
-
-    Ok(())
-}
- */
