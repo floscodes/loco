@@ -18,7 +18,7 @@ pub fn fetch_and_generate(
 ) -> Result<GenerateResults> {
     if let Some(git_url) = git_url {
         println!("Cloning task from git repository: {}", git_url);
-        let _repo = clone_repo(git_url, Path::new("./tasks"))?;
+        let _repo = clone_repo(git_url, Path::new("./src/tasks"))?;
         println!("Processing the cloned repository");
         process_repo(rrgen, git_url, appinfo)
             .map_err(|e| Error::Message(format!("Failed to process git repository: {}", e)))
@@ -81,7 +81,7 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
         .rsplit("/")
         .next()
         .ok_or(Error::Message("Failed to get git repo name".to_string()))?;
-    let path_str = format!("./tasks/{}", git_path);
+    let path_str = format!("./src/tasks/{}", git_path);
     let git_dir = Path::new(&path_str);
     let config_path = git_dir.join(CONFIG_FILE);
     println!("Check if Cargo.toml exists at: {}", git_dir.display());
@@ -108,7 +108,7 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
             "Package name missing in {}. Task name is required.",
             CONFIG_FILE
         )))?;
-    let task_name_path_string = format!("./tasks/{}", task_name.to_string());
+    let task_name_path_string = format!("./src/tasks/{}", task_name.to_string());
     println!(
         "Renaming git directory to task name: {}",
         task_name_path_string
@@ -195,7 +195,7 @@ fn check_deps_table_in_config_file(config_file: String) -> String {
 
     if let Item::Table(deps_table) = deps {
         let mut dep_item = Table::new();
-        dep_item["path"] = toml_edit::value(format!("./tasks/{}", task_name));
+        dep_item["path"] = toml_edit::value(format!("./src/tasks/{}", task_name));
         dep_item.set_implicit(true);
 
         deps_table[task_name] = Item::Table(dep_item);
