@@ -9,6 +9,8 @@ use std::{clone, fmt::Display};
 use toml::Value;
 use toml_edit::{DocumentMut, Item, Table};
 
+mod tests;
+
 const CONFIG_FILE: &str = "Cargo.toml";
 
 pub fn fetch_and_generate(
