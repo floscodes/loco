@@ -124,6 +124,10 @@ fn remove_project_dep_from_cargo_toml(config_file: String, path: &Path) -> Resul
     Ok(())
 }
 
+// This function checks if the dependencies table exists in the configuration file.
+// If it does not exist, it adds it.
+// If it does exist, it returns the original configuration file.
+// This is useful to ensure that the dependencies table is always present in the Cargo.toml.
 fn check_deps_table_in_config_file(config_file: String) -> String {
     let mut new_config_file = String::new();
     if config_file.contains("[dependencies]") {
