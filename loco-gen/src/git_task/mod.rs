@@ -1,5 +1,6 @@
 use super::render_template;
 use crate::{AppInfo, Error, GenerateResults, Result};
+use core::task;
 use git2;
 use rrgen::{self, RRgen};
 use serde_json::json;
@@ -30,13 +31,42 @@ pub fn fetch_and_generate(
 }
 
 fn clone_repo(git_url: &str, path: &Path) -> Result<()> {
-    let mut task_name = git_url.rsplit('/').next().ok_or(Error::Message(
-        "Failed to get git repo name. Maybe no valid GIT URL has been provided!".to_string(),
-    ))?;
-    task_name = task_name.trim_end_matches(".git");
-    let task_path = path.join(task_name);
-    git2::Repository::clone(git_url, task_path)
+    let task_name = git_url
+        .rsplit('/')
+        .next()
+        .ok_or(Error::Message(
+            "Failed to get git repo name. Maybe no valid GIT URL has been provided!".to_string(),
+        ))?
+        .trim_end_matches(".git")
+        .to_string();
+
+    let task_path = path.join(&task_name);
+    if task_path.exists() {
+        return Err(Error::Message(format!(
+            "Task directory {} already exists. Please remove it before cloning.",
+            task_path.display()
+        )));
+    }
+
+    // Create the task directory if it does not exist
+    fs::create_dir_all(&task_path)
+        .map_err(|e| Error::Message(format!("Failed to create task directory: {}", e)))?;
+
+    // Create a temporary directory for cloning the repository
+
+    println!("Cloning git repository");
+    let temp_dir_str = &format!("./{}-temp", task_name);
+    let temp_dir = Path::new(&temp_dir_str);
+    git2::Repository::clone(git_url, temp_dir)
         .map_err(|e| Error::Message(format!("Failed to clone git repository: {}", e)))?;
+    fs::rename(temp_dir, &task_path).map_err(|e| {
+        Error::Message(format!(
+            "Failed to move cloned files to task directory: {}",
+            e
+        ))
+    })?;
+    fs::remove_dir_all(temp_dir)
+        .map_err(|e| Error::Message(format!("Failed to remove temporary repo directory: {}", e)))?;
     Ok(())
 }
 
