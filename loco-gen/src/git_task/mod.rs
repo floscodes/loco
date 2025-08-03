@@ -3,11 +3,9 @@ use crate::{AppInfo, Error, GenerateResults, Result};
 use git2;
 use rrgen::{self, RRgen};
 use serde_json::json;
+use std::fs;
 use std::path::Path;
-use std::str::FromStr;
-use std::{clone, fmt::Display};
 use toml::Value;
-use toml_edit::{DocumentMut, Item, Table};
 
 mod tests;
 
@@ -106,6 +104,17 @@ fn render_git_task(rrgen: &RRgen, task_name: String, app_name: &str) -> Result<G
             "is_git_task": true
         }
     );
+    // Check if mod.rs exists in the tasks directory
+    let task_path = Path::new("./src/tasks");
+    let task_mod_path = task_path.join("mod.rs");
+    if !task_path.exists() {
+        fs::create_dir(task_path)
+            .map_err(|e| Error::Message(format!("Failed to create tasks directory: {}", e)))?;
+    }
+    if !task_mod_path.exists() {
+        fs::File::create(&task_mod_path)
+            .map_err(|e| Error::Message(format!("Failed to create mod.rs: {}", e)))?;
+    }
     render_template(rrgen, Path::new("task"), &vars)
 }
 
