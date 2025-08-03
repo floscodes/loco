@@ -1,6 +1,5 @@
 use super::render_template;
 use crate::{AppInfo, Error, GenerateResults, Result};
-use core::task;
 use git2;
 use rrgen::{self, RRgen};
 use serde_json::json;
