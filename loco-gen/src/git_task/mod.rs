@@ -30,7 +30,12 @@ pub fn fetch_and_generate(
 }
 
 fn clone_repo(git_url: &str, path: &Path) -> Result<()> {
-    git2::Repository::clone(git_url, path)
+    let mut task_name = git_url.rsplit('/').next().ok_or(Error::Message(
+        "Failed to get git repo name. Maybe no valid GIT URL has been provided!".to_string(),
+    ))?;
+    task_name = task_name.trim_end_matches(".git");
+    let task_path = path.join(task_name);
+    git2::Repository::clone(git_url, task_path)
         .map_err(|e| Error::Message(format!("Failed to clone git repository: {}", e)))?;
     Ok(())
 }
@@ -46,10 +51,7 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
     let path_str = format!("./tasks/{}", git_path);
     let git_dir = Path::new(&path_str);
     let config_path = git_dir.join(CONFIG_FILE);
-    println!(
-        "Check if loco-task.toml exists at: {}",
-        config_path.display()
-    );
+    println!("Check if Cargo.toml exists at: {}", git_dir.display());
     // Check if the configuration file exists
     if !config_path.exists() {
         return Err(Error::Message(format!(
