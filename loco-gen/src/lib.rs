@@ -245,9 +245,6 @@ pub enum Component {
         /// Name of the thing to generate
         name: String,
 
-        /// Is it a link table? use this for generating many-to-many relations
-        link: bool,
-
         /// Model fields, eg. title:string hits:int
         fields: Vec<(String, String)>,
     },
@@ -329,9 +326,7 @@ pub fn generate(rrgen: &RRgen, component: Component, appinfo: &AppInfo) -> Resul
      */
     let get_result = match component {
         #[cfg(feature = "with-db")]
-        Component::Model { name, link, fields } => {
-            model::generate(rrgen, &name, link, &fields, appinfo)?
-        }
+        Component::Model { name, fields } => model::generate(rrgen, &name, &fields, appinfo)?,
         #[cfg(feature = "with-db")]
         Component::Scaffold { name, fields, kind } => {
             scaffold::generate(rrgen, &name, &fields, &kind, appinfo)?
