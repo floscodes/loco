@@ -64,8 +64,7 @@ fn clone_repo(git_url: &str, path: &Path) -> Result<()> {
             e
         ))
     })?;
-    fs::remove_dir_all(temp_dir)
-        .map_err(|e| Error::Message(format!("Failed to remove temporary repo directory: {}", e)))?;
+    println!("Successfully generated git task in {}", task_path.display());
     Ok(())
 }
 
