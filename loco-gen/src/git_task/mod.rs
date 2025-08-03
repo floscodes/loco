@@ -18,7 +18,7 @@ pub fn fetch_and_generate(
 ) -> Result<GenerateResults> {
     if let Some(git_url) = git_url {
         println!("Cloning task from git repository: {}", git_url);
-        let _repo = clone_repo(git_url, Path::new("./tasks"))?;
+        let _repo = clone_repo(git_url, Path::new("./src/tasks"))?;
         println!("Processing the cloned repository");
         process_repo(rrgen, git_url, appinfo)
             .map_err(|e| Error::Message(format!("Failed to process git repository: {}", e)))
@@ -30,8 +30,46 @@ pub fn fetch_and_generate(
 }
 
 fn clone_repo(git_url: &str, path: &Path) -> Result<()> {
-    git2::Repository::clone(git_url, path)
+    if !path.exists() {
+        fs::create_dir_all(path)
+            .map_err(|e| Error::Message(format!("Failed to create tasks directory: {}", e)))?;
+    }
+    // Get the name of the git repository to use as the task name
+    let task_name = git_url
+        .rsplit('/')
+        .next()
+        .ok_or(Error::Message(
+            "Failed to get git repo name. Maybe no valid GIT URL has been provided!".to_string(),
+        ))?
+        .trim_end_matches(".git")
+        .to_string();
+
+    let task_path = path.join(&task_name);
+    if task_path.exists() {
+        return Err(Error::Message(format!(
+            "Task directory {} already exists. Please remove it before cloning.",
+            task_path.display()
+        )));
+    }
+
+    // Create the task directory if it does not exist
+    fs::create_dir_all(&task_path)
+        .map_err(|e| Error::Message(format!("Failed to create task directory: {}", e)))?;
+
+    // Create a temporary directory for cloning the repository
+
+    println!("Cloning git repository");
+    let temp_dir_str = &format!("./{}-temp", task_name);
+    let temp_dir = Path::new(&temp_dir_str);
+    git2::Repository::clone(git_url, temp_dir)
         .map_err(|e| Error::Message(format!("Failed to clone git repository: {}", e)))?;
+    fs::rename(temp_dir, &task_path).map_err(|e| {
+        Error::Message(format!(
+            "Failed to move cloned files to task directory: {}",
+            e
+        ))
+    })?;
+    println!("Successfully generated git task in {}", task_path.display());
     Ok(())
 }
 
@@ -43,13 +81,10 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
         .rsplit("/")
         .next()
         .ok_or(Error::Message("Failed to get git repo name".to_string()))?;
-    let path_str = format!("./tasks/{}", git_path);
+    let path_str = format!("./src/tasks/{}", git_path);
     let git_dir = Path::new(&path_str);
     let config_path = git_dir.join(CONFIG_FILE);
-    println!(
-        "Check if loco-task.toml exists at: {}",
-        config_path.display()
-    );
+    println!("Check if Cargo.toml exists at: {}", git_dir.display());
     // Check if the configuration file exists
     if !config_path.exists() {
         return Err(Error::Message(format!(
@@ -73,7 +108,7 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
             "Package name missing in {}. Task name is required.",
             CONFIG_FILE
         )))?;
-    let task_name_path_string = format!("./tasks/{}", task_name.to_string());
+    let task_name_path_string = format!("./src/tasks/{}", task_name.to_string());
     println!(
         "Renaming git directory to task name: {}",
         task_name_path_string
@@ -146,29 +181,3 @@ fn check_deps_table_in_config_file(config_file: String) -> String {
         new_config_file
     }
 }
-
-/* fn add_to_cargo_toml(task_name: &String) -> Result<()> {
-    let cargo_toml_raw = std::fs::read_to_string(CONFIG_FILE)
-        .map_err(|e| Error::Message(format!("Failed to read {}: {}", CONFIG_FILE, e)))?;
-
-    let mut cargo_toml = DocumentMut::from_str(&cargo_toml_raw)
-        .map_err(|e| Error::Message(format!("Failed to parse Cargo.toml: {}", e)))?;
-
-    let deps = cargo_toml
-        .entry("dependencies")
-        .or_insert(Item::Table(Table::new()));
-
-    if let Item::Table(deps_table) = deps {
-        let mut dep_item = Table::new();
-        dep_item["path"] = toml_edit::value(format!("./tasks/{}", task_name));
-        dep_item.set_implicit(true);
-
-        deps_table[task_name] = Item::Table(dep_item);
-    }
-
-    std::fs::write(CONFIG_FILE, cargo_toml.to_string())
-        .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CONFIG_FILE, e)))?;
-
-    Ok(())
-}
- */

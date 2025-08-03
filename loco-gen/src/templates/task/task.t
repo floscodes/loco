@@ -13,8 +13,8 @@ injections:
 {% if is_git_task %}
 - into: Cargo.toml
   after: "[dependencies]"
-  content: '\n{{file_name}} = { path = "./tasks/{{file_name}}" }'
-- into: "tasks/{{file_name}}/Cargo.toml"
+  content: '\n{{file_name}} = { path = "./src/tasks/{{file_name}}" }'
+- into: "src/tasks/{{file_name}}/Cargo.toml"
   after: "[dependencies]"
   content: '\npkg_root = { package = "{{pkg_name}}", path = "../../../" }'
 {% endif %}
