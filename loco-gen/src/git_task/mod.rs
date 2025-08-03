@@ -30,6 +30,11 @@ pub fn fetch_and_generate(
 }
 
 fn clone_repo(git_url: &str, path: &Path) -> Result<()> {
+    if !path.exists() {
+        fs::create_dir_all(path)
+            .map_err(|e| Error::Message(format!("Failed to create tasks directory: {}", e)))?;
+    }
+    // Get the name of the git repository to use as the task name
     let task_name = git_url
         .rsplit('/')
         .next()
