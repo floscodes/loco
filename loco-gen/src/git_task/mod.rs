@@ -80,7 +80,9 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
     let git_path = git_url
         .rsplit("/")
         .next()
-        .ok_or(Error::Message("Failed to get git repo name".to_string()))?;
+        .ok_or(Error::Message("Failed to get git repo name".to_string()))?
+        .trim_end_matches(".git");
+    println!("Processing git repository: {}", git_path);
     let path_str = format!("./src/tasks/{}", git_path);
     let git_dir = Path::new(&path_str);
     let config_path = git_dir.join(CONFIG_FILE);
@@ -92,22 +94,36 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
             CONFIG_FILE
         )));
     }
-    let mut config_file = std::fs::read_to_string(config_path.clone())
-        .map_err(|e| Error::Message(format!("Failed to read {}: {}", CONFIG_FILE, e)))?;
+    let mut config_file = std::fs::read_to_string(config_path.clone()).map_err(|e| {
+        Error::Message(format!(
+            "Failed to read {} in task root directory: {}",
+            CONFIG_FILE, e
+        ))
+    })?;
     // Check if the dependencies table exists in the configuration file.
     // If not, add it.
     config_file = check_deps_table_in_config_file(config_file);
-    // Parse the configuration file
-    println!("Parsing loco-task.toml");
     let config_toml: Value = toml::from_str(&config_file)
         .map_err(|e| Error::Message(format!("Failed to parse {}: {}", CONFIG_FILE, e)))?;
+
+    // the task name is the package name in the Cargo.toml file
+    // If the package name is missing, return an error.
+    // The directory will be renamed to the package name later on.
     let task_name = config_toml
         .get("package")
         .and_then(|v| v.get("name"))
         .ok_or(Error::Message(format!(
             "Package name missing in {}. Task name is required.",
             CONFIG_FILE
+        )))?
+        .as_str()
+        .ok_or(Error::Message(format!(
+            "Package name in {} is not a string",
+            CONFIG_FILE
         )))?;
+    println!("Adding package root dependency to Cargo.toml");
+    add_deps_to_root_config_file(task_name)
+        .map_err(|e| Error::Message(format!("Failed to update {}: {}", CONFIG_FILE, e)))?;
     let task_name_path_string = format!("./src/tasks/{}", task_name.to_string());
     println!(
         "Renaming git directory to task name: {}",
@@ -120,7 +136,7 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
             e
         ))
     })?;
-    remove_project_dep_from_cargo_toml(config_file, &config_path).map_err(|e| {
+    update_project_dep_from_cargo_toml(config_file, &config_path, task_name).map_err(|e| {
         Error::Message(format!(
             "Failed to edit Cargo.toml for updating pkg_root dependency: {}",
             e
@@ -153,15 +169,51 @@ fn render_git_task(rrgen: &RRgen, task_name: String, app_name: &str) -> Result<G
     render_template(rrgen, Path::new("task"), &vars)
 }
 
+fn add_deps_to_root_config_file(task_name: &str) -> Result<()> {
+    let root_config_file = fs::read_to_string(Path::new(CONFIG_FILE)).map_err(|e| {
+        Error::Message(format!(
+            "Failed to read {} in project root: {}",
+            CONFIG_FILE, e
+        ))
+    })?;
+    let parts = root_config_file.split("[dependencies]").collect::<Vec<_>>();
+    let mut new_parts = Vec::new();
+    new_parts.push(parts[0].to_string());
+    new_parts.push("[dependencies]".to_string());
+    new_parts.push(format!(
+        "{} = {{ path = \"./src/tasks/{}\" }}",
+        task_name, task_name
+    ));
+    new_parts.push(parts[1].to_string());
+    fs::write(CONFIG_FILE, new_parts.join("\n"))
+        .map_err(|e| Error::Message(format!("Failed to write {}: {}", CONFIG_FILE, e)))?;
+    Ok(())
+}
+
 // This function removes the project_root dependency from the Cargo.toml.
 // This is useful, because it allows the task to be used as a dependency in other projects.
 // When the task.t is being rendered, the pkg_root dependency is added to the Cargo.toml with the correct path and name.
-fn remove_project_dep_from_cargo_toml(config_file: String, path: &Path) -> Result<()> {
-    let new_config_file = config_file
+fn update_project_dep_from_cargo_toml(
+    config_file: String,
+    path: &Path,
+    task_name: &str,
+) -> Result<()> {
+    let mut new_config_file = config_file
         .lines()
         .filter(|l| !l.contains("pkg_root"))
         .collect::<Vec<_>>()
         .join("\n");
+    let parts = new_config_file.split("[dependencies]").collect::<Vec<_>>();
+    let mut new_parts = Vec::new();
+    new_parts.push(parts[0].to_string());
+    new_parts.push("[dependencies]".to_string());
+    new_parts.push(format!(
+        r#"pkg_root = {{ package = "{}", path = "../../../" }}"#,
+        task_name
+    ));
+    new_parts.push(parts[1].to_string());
+
+    new_config_file = new_parts.join("\n");
 
     std::fs::write(path, new_config_file)
         .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CONFIG_FILE, e)))?;
