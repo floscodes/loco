@@ -37,7 +37,7 @@ pub fn clone_repo(git_url: &str, path: &Path) -> Result<()> {
     // Create a temporary directory for cloning the repository
 
     println!("Cloning git repository");
-    let temp_dir_str = &format!("./{}-temp", task_name);
+    let temp_dir_str = &format!("./{}/{}-temp", path.display(), task_name);
     let temp_dir = Path::new(&temp_dir_str);
     git2::Repository::clone(git_url, temp_dir)
         .map_err(|e| Error::Message(format!("Failed to clone git repository: {}", e)))?;
@@ -165,7 +165,7 @@ pub fn add_deps_to_root_cargo_toml(task_name: &str) -> Result<()> {
     new_parts.push(parts[0].to_string());
     new_parts.push("[dependencies]".to_string());
     new_parts.push(format!(
-        "{} = {{ path = \"./src/tasks/{}\" }}",
+        r#"{} = {{ path = "./src/tasks/{}" }}"#,
         task_name, task_name
     ));
     new_parts.push(parts[1].to_string());
@@ -199,7 +199,7 @@ pub fn update_project_dep_in_task_cargo_toml(
 
     new_config_file = new_parts.join("\n");
 
-    fs::write(path.join("/".to_owned() + CARGO_TOML), new_config_file).map_err(|e| {
+    fs::write(path.join(CARGO_TOML), new_config_file).map_err(|e| {
         Error::Message(format!(
             "Cannot write in {}/{}: {}",
             path.display(),
