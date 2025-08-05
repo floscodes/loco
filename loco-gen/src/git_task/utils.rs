@@ -114,15 +114,14 @@ pub fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<G
             e
         ))
     })?;
-    update_project_dep_from_task_cargo_toml(config_file, &renamed_git_dir, task_name).map_err(
-        |e| {
+    update_project_dep_from_task_cargo_toml(config_file, &renamed_git_dir, &appinfo.app_name)
+        .map_err(|e| {
             Error::Message(format!(
                 "Failed to edit Cargo.toml in {} for updating pkg_root dependency: {}",
                 renamed_git_dir.display(),
                 e
             ))
-        },
-    )?;
+        })?;
     let app_name = appinfo.app_name.as_str();
     println!("Rendering template files");
     render_git_task(rrgen, task_name.to_string(), app_name)
@@ -181,7 +180,7 @@ pub fn add_deps_to_root_cargo_toml(task_name: &str) -> Result<()> {
 pub fn update_project_dep_from_task_cargo_toml(
     config_file: String,
     path: &Path,
-    task_name: &str,
+    app_name: &str,
 ) -> Result<()> {
     let mut new_config_file = config_file
         .lines()
@@ -194,7 +193,7 @@ pub fn update_project_dep_from_task_cargo_toml(
     new_parts.push("[dependencies]".to_string());
     new_parts.push(format!(
         r#"pkg_root = {{ package = "{}", path = "../../../" }}"#,
-        task_name
+        app_name
     ));
     new_parts.push(parts[1].to_string());
 
