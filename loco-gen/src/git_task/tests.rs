@@ -36,7 +36,7 @@ fn test_check_deps_table_in_config_file() {
 
 #[test]
 fn test_remove_project_dep_from_cargo_toml() {
-    use super::update_project_dep_from_task_cargo_toml;
+    use super::update_project_dep_in_task_cargo_toml;
     use std::fs;
     use std::path::Path;
 
@@ -51,7 +51,7 @@ fn test_remove_project_dep_from_cargo_toml() {
         "#;
 
     let config_path = Path::new("./Cargo_test.toml");
-    update_project_dep_from_task_cargo_toml(config_file.to_string(), config_path, "test_package")
+    update_project_dep_in_task_cargo_toml(config_file.to_string(), config_path, "test_package")
         .unwrap();
     let new_config = fs::read_to_string(config_path).unwrap();
     assert!(new_config.contains("pkg_root"));

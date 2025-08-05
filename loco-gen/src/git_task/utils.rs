@@ -114,7 +114,7 @@ pub fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<G
             e
         ))
     })?;
-    update_project_dep_from_task_cargo_toml(config_file, &renamed_git_dir, &appinfo.app_name)
+    update_project_dep_in_task_cargo_toml(config_file, &renamed_git_dir, &appinfo.app_name)
         .map_err(|e| {
             Error::Message(format!(
                 "Failed to edit Cargo.toml in {} for updating pkg_root dependency: {}",
@@ -177,7 +177,7 @@ pub fn add_deps_to_root_cargo_toml(task_name: &str) -> Result<()> {
 // This function removes the project_root dependency from the Cargo.toml.
 // This is useful, because it allows the task to be used as a dependency in other projects.
 // When the task.t is being rendered, the pkg_root dependency is added to the Cargo.toml with the correct path and name.
-pub fn update_project_dep_from_task_cargo_toml(
+pub fn update_project_dep_in_task_cargo_toml(
     config_file: String,
     path: &Path,
     app_name: &str,
