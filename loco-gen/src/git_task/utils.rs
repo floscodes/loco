@@ -114,12 +114,15 @@ pub fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<G
             e
         ))
     })?;
-    update_project_dep_from_task_cargo_toml(config_file, &config_path, task_name).map_err(|e| {
-        Error::Message(format!(
-            "Failed to edit Cargo.toml for updating pkg_root dependency: {}",
-            e
-        ))
-    })?;
+    update_project_dep_from_task_cargo_toml(config_file, &renamed_git_dir, task_name).map_err(
+        |e| {
+            Error::Message(format!(
+                "Failed to edit Cargo.toml in {} for updating pkg_root dependency: {}",
+                renamed_git_dir.display(),
+                e
+            ))
+        },
+    )?;
     let app_name = appinfo.app_name.as_str();
     println!("Rendering template files");
     render_git_task(rrgen, task_name.to_string(), app_name)
