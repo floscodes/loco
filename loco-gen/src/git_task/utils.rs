@@ -200,7 +200,7 @@ pub fn update_project_dep_from_task_cargo_toml(
 
     new_config_file = new_parts.join("\n");
 
-    std::fs::write(path, new_config_file)
+    fs::write(path.join("/".to_owned() + CARGO_TOML), new_config_file)
         .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CARGO_TOML, e)))?;
     Ok(())
 }
