@@ -122,7 +122,7 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
             CARGO_TOML
         )))?;
     println!("Adding package root dependency to Cargo.toml");
-    add_deps_to_root_config_file(task_name)
+    add_deps_to_root_cargo_toml(task_name)
         .map_err(|e| Error::Message(format!("Failed to update {}: {}", CARGO_TOML, e)))?;
     let task_name_path_string = format!("./src/tasks/{}", task_name.to_string());
     println!(
@@ -136,7 +136,7 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
             e
         ))
     })?;
-    update_project_dep_from_cargo_toml(config_file, &config_path, task_name).map_err(|e| {
+    update_project_dep_from_task_cargo_toml(config_file, &config_path, task_name).map_err(|e| {
         Error::Message(format!(
             "Failed to edit Cargo.toml for updating pkg_root dependency: {}",
             e
@@ -169,7 +169,7 @@ fn render_git_task(rrgen: &RRgen, task_name: String, app_name: &str) -> Result<G
     render_template(rrgen, Path::new("task"), &vars)
 }
 
-fn add_deps_to_root_config_file(task_name: &str) -> Result<()> {
+fn add_deps_to_root_cargo_toml(task_name: &str) -> Result<()> {
     let root_config_file = fs::read_to_string(Path::new(CARGO_TOML)).map_err(|e| {
         Error::Message(format!(
             "Failed to read {} in project root: {}",
@@ -193,7 +193,7 @@ fn add_deps_to_root_config_file(task_name: &str) -> Result<()> {
 // This function removes the project_root dependency from the Cargo.toml.
 // This is useful, because it allows the task to be used as a dependency in other projects.
 // When the task.t is being rendered, the pkg_root dependency is added to the Cargo.toml with the correct path and name.
-fn update_project_dep_from_cargo_toml(
+fn update_project_dep_from_task_cargo_toml(
     config_file: String,
     path: &Path,
     task_name: &str,
