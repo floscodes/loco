@@ -102,11 +102,71 @@ fn create_and_render_git_test_task() {
     // Process the repo and render the test git task
     let _result = process_repo(&rrgen, git_url, &appinfo).unwrap();
 
-    //Do the clean-up after testing
-    fs::remove_dir_all("./src/tasks").unwrap();
-    fs::remove_dir_all(test_tasks_dir).unwrap();
-    fs::remove_file(app_file_path).unwrap();
+    // DO THE CLEAN-UP AFTER TESTING
+    cleanup("./src/tasks", "./tests/tasks", app_file_path, &cargo_toml);
+}
+
+// !!! IMPORTANT NOTE !!!
+// THIS TEST FUNCTION IS USED TO CLONE A TEST GIT TASK RUST LIB.
+// IT IS ONLY INTENDED FOR TESTING IN THE LOCO-GEN CRATE TO MAKE SURE THAT THE PORCESSING AND RENDERING OF A GIT TASK WORKS WITHOUT THROWING ERRORS.
+// IT IS NOT INTENDED FOR TESTING IN A LOCO PROJECT.
+#[test]
+fn clone_and_render_git_test_task() {
+    use crate::AppInfo;
+    use std::fs;
+    use std::io::Write;
+    use std::path::Path;
+
+    let test_git_url = "https://github.com/floscodes/loco-git-task-template.git";
+    let rrgen = crate::RRgen::with_working_dir(".");
+    let appinfo = AppInfo {
+        app_name: "test_app".to_string(),
+    };
+
+    super::fetch_and_generate(&rrgen, Some(&test_git_url.to_owned()), &appinfo).unwrap();
+
+    // create mod.rs file for testing
+    let mod_file_path = "./src/tasks/mod.rs";
+    let _mod_file = fs::File::create(mod_file_path).unwrap();
+    // create tasks directory for testing if it doesn't exist
+    let test_tasks_dir = "./tests/tasks";
+    if !Path::new(test_tasks_dir).exists() {
+        fs::create_dir(test_tasks_dir).unwrap();
+    }
+    // create test mod file for testing
+    let test_mod_file_path = "./tests/tasks/mod.rs";
+    let _test_mod_file = fs::File::create(test_mod_file_path).unwrap();
+    // create app.rs for testing
+    let app_file_path = "./src/app.rs";
+    let mut app_file = fs::File::create(app_file_path).unwrap();
+    let _ = writeln!(app_file, "// tasks-inject").unwrap();
+
+    // Save the original Cargo.toml to restore it after the test
+    let cargo_toml = fs::read_to_string("./Cargo.toml").unwrap();
+
+    // DO THE CLEAN-UP AFTER TESTING
+    cleanup("./src/tasks", "./tests/tasks", app_file_path, &cargo_toml);
+}
+
+fn cleanup(tasks_path: &str, test_tasks_path: &str, app_file_path: &str, cargo_toml_string: &str) {
+    use std::path::Path;
+
+    // Clean up the tasks directory
+    if Path::new(tasks_path).exists() {
+        std::fs::remove_dir_all(tasks_path).unwrap();
+    }
+    // Clean up the test tasks directory
+    if Path::new(test_tasks_path).exists() {
+        std::fs::remove_dir_all(test_tasks_path).unwrap();
+    }
+    // Clean up the app file
+    if Path::new(app_file_path).exists() {
+        std::fs::remove_file(app_file_path).unwrap();
+    }
 
     // Restore the original Cargo.toml
-    fs::write("./Cargo.toml", cargo_toml).unwrap();
+    let cargo_toml_path = Path::new("./Cargo.toml");
+    if cargo_toml_path.exists() {
+        std::fs::write(cargo_toml_path, cargo_toml_string).unwrap();
+    }
 }

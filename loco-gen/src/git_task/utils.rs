@@ -199,8 +199,14 @@ pub fn update_project_dep_in_task_cargo_toml(
 
     new_config_file = new_parts.join("\n");
 
-    fs::write(path.join("/".to_owned() + CARGO_TOML), new_config_file)
-        .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CARGO_TOML, e)))?;
+    fs::write(path.join("/".to_owned() + CARGO_TOML), new_config_file).map_err(|e| {
+        Error::Message(format!(
+            "Cannot write in {}/{}: {}",
+            path.display(),
+            CARGO_TOML,
+            e
+        ))
+    })?;
     Ok(())
 }
 
