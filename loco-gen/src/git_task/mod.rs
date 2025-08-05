@@ -9,7 +9,7 @@ use toml::Value;
 
 mod tests;
 
-const CONFIG_FILE: &str = "Cargo.toml";
+const CARGO_TOML: &str = "Cargo.toml";
 
 pub fn fetch_and_generate(
     rrgen: &RRgen,
@@ -85,26 +85,26 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
     println!("Processing git repository: {}", git_path);
     let path_str = format!("./src/tasks/{}", git_path);
     let git_dir = Path::new(&path_str);
-    let config_path = git_dir.join(CONFIG_FILE);
+    let config_path = git_dir.join(CARGO_TOML);
     println!("Check if Cargo.toml exists at: {}", git_dir.display());
     // Check if the configuration file exists
     if !config_path.exists() {
         return Err(Error::Message(format!(
             "{} not found in the repository",
-            CONFIG_FILE
+            CARGO_TOML
         )));
     }
     let mut config_file = std::fs::read_to_string(config_path.clone()).map_err(|e| {
         Error::Message(format!(
             "Failed to read {} in task root directory: {}",
-            CONFIG_FILE, e
+            CARGO_TOML, e
         ))
     })?;
     // Check if the dependencies table exists in the configuration file.
     // If not, add it.
     config_file = check_deps_table_in_config_file(config_file);
     let config_toml: Value = toml::from_str(&config_file)
-        .map_err(|e| Error::Message(format!("Failed to parse {}: {}", CONFIG_FILE, e)))?;
+        .map_err(|e| Error::Message(format!("Failed to parse {}: {}", CARGO_TOML, e)))?;
 
     // the task name is the package name in the Cargo.toml file
     // If the package name is missing, return an error.
@@ -114,16 +114,16 @@ fn process_repo(rrgen: &RRgen, git_url: &str, appinfo: &AppInfo) -> Result<Gener
         .and_then(|v| v.get("name"))
         .ok_or(Error::Message(format!(
             "Package name missing in {}. Task name is required.",
-            CONFIG_FILE
+            CARGO_TOML
         )))?
         .as_str()
         .ok_or(Error::Message(format!(
             "Package name in {} is not a string",
-            CONFIG_FILE
+            CARGO_TOML
         )))?;
     println!("Adding package root dependency to Cargo.toml");
     add_deps_to_root_config_file(task_name)
-        .map_err(|e| Error::Message(format!("Failed to update {}: {}", CONFIG_FILE, e)))?;
+        .map_err(|e| Error::Message(format!("Failed to update {}: {}", CARGO_TOML, e)))?;
     let task_name_path_string = format!("./src/tasks/{}", task_name.to_string());
     println!(
         "Renaming git directory to task name: {}",
@@ -170,10 +170,10 @@ fn render_git_task(rrgen: &RRgen, task_name: String, app_name: &str) -> Result<G
 }
 
 fn add_deps_to_root_config_file(task_name: &str) -> Result<()> {
-    let root_config_file = fs::read_to_string(Path::new(CONFIG_FILE)).map_err(|e| {
+    let root_config_file = fs::read_to_string(Path::new(CARGO_TOML)).map_err(|e| {
         Error::Message(format!(
             "Failed to read {} in project root: {}",
-            CONFIG_FILE, e
+            CARGO_TOML, e
         ))
     })?;
     let parts = root_config_file.split("[dependencies]").collect::<Vec<_>>();
@@ -185,8 +185,8 @@ fn add_deps_to_root_config_file(task_name: &str) -> Result<()> {
         task_name, task_name
     ));
     new_parts.push(parts[1].to_string());
-    fs::write(CONFIG_FILE, new_parts.join("\n"))
-        .map_err(|e| Error::Message(format!("Failed to write {}: {}", CONFIG_FILE, e)))?;
+    fs::write(CARGO_TOML, new_parts.join("\n"))
+        .map_err(|e| Error::Message(format!("Failed to write {}: {}", CARGO_TOML, e)))?;
     Ok(())
 }
 
@@ -216,7 +216,7 @@ fn update_project_dep_from_cargo_toml(
     new_config_file = new_parts.join("\n");
 
     std::fs::write(path, new_config_file)
-        .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CONFIG_FILE, e)))?;
+        .map_err(|e| Error::Message(format!("Failed to write updated {}: {}", CARGO_TOML, e)))?;
     Ok(())
 }
 
