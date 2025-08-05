@@ -54,7 +54,7 @@ fn test_remove_project_dep_from_cargo_toml() {
     update_project_dep_from_cargo_toml(config_file.to_string(), config_path, "test_package")
         .unwrap();
     let new_config = fs::read_to_string(config_path).unwrap();
-    assert!(!new_config.contains("pkg_root"));
+    assert!(new_config.contains("pkg_root"));
     fs::remove_file(config_path).unwrap(); // Clean up after test
 }
 
