@@ -11,7 +11,7 @@ use axum::{
 use dialoguer;
 use lettre::{address::AddressError, transport::smtp};
 
-use crate::{controller::ErrorDetail, depcheck};
+use crate::{controller::ErrorDetail, depcheck, validation::ModelValidationErrors};
 
 /*
 backtrace principles:
@@ -156,7 +156,7 @@ pub enum Error {
     Any(#[from] Box<dyn std::error::Error + Send + Sync>),
 
     #[error(transparent)]
-    ValidationError(#[from] validator::ValidationErrors),
+    Validation(#[from] ModelValidationErrors),
 
     #[error(transparent)]
     AxumFormRejection(#[from] axum::extract::rejection::FormRejection),

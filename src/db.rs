@@ -477,6 +477,7 @@ impl EntityCmd {
                     Some("src/models/_entities".to_string()),
                 ),
                 ("--with-serde".to_string(), Some("both".to_string())),
+                ("--with-copy-enums".to_string(), None),
             ]),
         }
     }
@@ -620,13 +621,48 @@ fn fix_entities() -> AppResult<()> {
                 .file_name()
                 .ok_or_else(|| Error::string("cannot extract file name"))?,
         );
+
         if !new_file.exists() {
+            // Check if the entity has an updated_at field
+            let entity_content = fs::read_to_string(entity_file)?;
+            let has_updated_at = entity_content.contains("pub updated_at: DateTimeWithTimeZone");
+
             let module = new_file
                 .file_stem()
                 .ok_or_else(|| Error::string("cannot extract file stem"))?
                 .to_str()
                 .ok_or_else(|| Error::string("cannot extract file stem"))?;
             let module_pascal = heck::AsPascalCase(module);
+
+            // Conditionally generate the ActiveModelBehavior implementation
+            let before_save_impl = if has_updated_at {
+                r"#[async_trait::async_trait]
+impl ActiveModelBehavior for ActiveModel {
+    async fn before_save<C>(self, _db: &C, insert: bool) -> std::result::Result<Self, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        if !insert && self.updated_at.is_unchanged() {
+            let mut this = self;
+            this.updated_at = sea_orm::ActiveValue::Set(chrono::Utc::now().into());
+            Ok(this)
+        } else {
+            Ok(self)
+        }
+    }
+}"
+            } else {
+                r"#[async_trait::async_trait]
+impl ActiveModelBehavior for ActiveModel {
+    async fn before_save<C>(self, _db: &C, _insert: bool) -> std::result::Result<Self, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        Ok(self)
+    }
+}"
+            };
+
             fs::write(
                 &new_file,
                 format!(
@@ -634,21 +670,7 @@ fn fix_entities() -> AppResult<()> {
 pub use super::_entities::{module}::{{ActiveModel, Model, Entity}};
 pub type {module_pascal} = Entity;
 
-#[async_trait::async_trait]
-impl ActiveModelBehavior for ActiveModel {{
-    async fn before_save<C>(self, _db: &C, insert: bool) -> std::result::Result<Self, DbErr>
-    where
-        C: ConnectionTrait,
-    {{
-        if !insert && self.updated_at.is_unchanged() {{
-            let mut this = self;
-            this.updated_at = sea_orm::ActiveValue::Set(chrono::Utc::now().into());
-            Ok(this)
-        }} else {{
-            Ok(self)
-        }}
-    }}
-}}
+{before_save_impl}
 
 // implement your read-oriented logic here
 impl Model {{}}
@@ -1562,7 +1584,7 @@ mod tests {
 
         let expected = "generate entity --database-url sqlite::memory: --ignore-tables \
             seaql_migrations,pg_loco_queue,sqlt_loco_queue,sqlt_loco_queue_lock --output-dir \
-            src/models/_entities --with-serde both";
+            src/models/_entities --with-copy-enums --with-serde both";
         assert_eq!(cmd.command().join(" "), expected);
     }
 
@@ -1581,7 +1603,7 @@ model-extra-derives = "ts_rs::Ts"
         let expected = "generate entity --database-url sqlite::memory: --ignore-tables \
             seaql_migrations,pg_loco_queue,sqlt_loco_queue,sqlt_loco_queue_lock,table1,table2 \
             --max-connections 1 --model-extra-derives ts_rs::Ts --output-dir src/models/_entities \
-            --with-serde none";
+            --with-copy-enums --with-serde none";
         assert_eq!(cmd.command().join(" "), expected);
     }
 }
