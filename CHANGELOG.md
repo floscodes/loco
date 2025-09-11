@@ -12,6 +12,12 @@
 - Improvement: do not hot-reload unless files have changed. [https://github.com/loco-rs/loco/pull/1552](https://github.com/loco-rs/loco/pull/1552)
 - Feat: add --without-tz flag for controlling timestamp generation. [https://github.com/loco-rs/loco/pull/1592](https://github.com/loco-rs/loco/pull/1592)
 - Support extra fields when generating the join table migration. [https://github.com/loco-rs/loco/pull/1595](https://github.com/loco-rs/loco/pull/1595)
+- Convert validator to trait-based API (add ValidatorTrait, keep derive adapter, update docs). [https://github.com/loco-rs/loco/pull/1597](https://github.com/loco-rs/loco/pull/1597)
+- Rename dockerfile to Dockerfile. [https://github.com/loco-rs/loco/pull/1574](https://github.com/loco-rs/loco/pull/1574)
+- Enable edit CORS expose headers. [https://github.com/loco-rs/loco/pull/1599](https://github.com/loco-rs/loco/pull/1599)
+- Adding new imports about multipart. [https://github.com/loco-rs/loco/pull/1600](https://github.com/loco-rs/loco/pull/1600)
+- Adding readiness default endpoint. [https://github.com/loco-rs/loco/pull/1563](https://github.com/loco-rs/loco/pull/1563)
+- Add Route methods to make collecting and nesting easier. [https://github.com/loco-rs/loco/pull/1608](https://github.com/loco-rs/loco/pull/1608)
 
 
 ## v0.16.3
