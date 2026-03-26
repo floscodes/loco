@@ -156,7 +156,7 @@ ulid = { version = "1", optional = true }
 # bg_redis: redis workers
 redis = { version = "0.31", features = ["aio", "tokio-comp"], optional = true }
 
-scraper = { version = "0.21.0", features = ["deterministic"], optional = true }
+scraper = { version = "0.25.0", features = ["deterministic"], optional = true }
 
 dashmap = "6"
 notify = "8.1.0"
@@ -173,7 +173,7 @@ serde_json = "1"
 async-trait = { version = "0.1.74" }
 axum = { version = "0.8.1", features = ["macros", "multipart"] }
 tower = "0.4"
-tower-http = { version = "0.6.1", features = [
+tower-http = { version = "0.6.8", features = [
     "trace",
     "catch-panic",
     "timeout",
